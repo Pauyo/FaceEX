@@ -77,13 +77,10 @@ namespace FaceEX
                     0,
                     VideoFramePrecision.NearestFrame
                 );
-                var bitmapImage = new BitmapImage();
                 var randomAccessStream = new InMemoryRandomAccessStream();
                 await RandomAccessStream.CopyAsync(frame, randomAccessStream);
-                randomAccessStream.Seek(0);
-                bitmapImage.SetSource(randomAccessStream);
 
-//                DetectFace_Image(bitmapImage);
+                DetectFace_Image(randomAccessStream.AsStreamForRead());
 
                 await Task.Delay(20_000);
             }
