@@ -44,12 +44,10 @@ namespace FaceEX
             const string personGroupId = "default";
             const string personGroupName = "Default";
             if (await FaceServiceClient.GetPersonGroupAsync(personGroupId) == null)
-            {
                 await FaceServiceClient.CreatePersonGroupAsync(
                     personGroupId,
                     personGroupName
                 );
-            }
 
             // Person
             const string personId = "Default";
@@ -60,20 +58,17 @@ namespace FaceEX
 
             // Train person
             foreach (var fileData in fileDatas)
-            {
                 await FaceServiceClient.AddPersonFaceInPersonGroupAsync(
                     personGroupId,
                     person.PersonId,
                     await fileData.OpenStreamForReadAsync()
                 );
-            }
+
             await FaceServiceClient.TrainPersonGroupAsync(personGroupId);
 
             // ReSharper disable once SuspiciousTypeConversion.Global
             while ((await FaceServiceClient.GetPersonGroupTrainingStatusAsync(personGroupId)).Status.Equals("running"))
-            {
                 await Task.Delay(1000);
-            }
 
             Frame.Navigate(typeof(SelectTargetPage));
         }

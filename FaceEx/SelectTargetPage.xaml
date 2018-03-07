@@ -7,6 +7,7 @@
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Canvas x:Name="VisualizationCanvas" Visibility="Visible" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         <Button Click="ButtonBase_OnClick_Image" Content="Select an video" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
     </Grid>
 </Page>
