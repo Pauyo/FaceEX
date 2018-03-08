@@ -1,15 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows;
 using System.Threading.Tasks;
 using Windows.Media.Editing;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Media.Imaging;
 using Microsoft.ProjectOxford.Face;
+using Microsoft.ProjectOxford.Face.Contract;
 
 namespace FaceEX
 {
@@ -52,65 +52,101 @@ namespace FaceEX
 
             if (fileData.ContentType.StartsWith("image"))
             {
-                DetectFace_Image(await fileData.OpenStreamForReadAsync());
+                var detectedFace = await DetectFace_Image(await fileData.OpenStreamForReadAsync());
+
+                if (detectedFace != null)
+                {
+
+                }
             }
             else if (fileData.ContentType.StartsWith("video"))
             {
-                DetectFace_Video(fileData);
+                var detectFaces = await DetectFace_Video(fileData);
+
+                if (detectFaces.Count > 0)
+                {
+
+                }
             }
         }
 
-        private async void DetectFace_Video(StorageFile fileData)
+        private async Task<Dictionary<TimeSpan, Face[]>> DetectFace_Video(StorageFile fileData)
         {
+            // Process configs
             const int frameJumpSize = 15;
+            const int frameQuota = 20;
+            const int frameTimeout = 60_000;
+
+            // Video
             var videoProperties = await fileData.Properties.GetVideoPropertiesAsync();
-            for (
-                var time = TimeSpan.FromSeconds(0);
-                time < videoProperties.Duration;
-                time += TimeSpan.FromSeconds(frameJumpSize)
-            ) {
+            var videoTime = TimeSpan.FromSeconds(0);
+            var videoFrame = 0;
+
+            // DetectedFaces
+            var detectedFaces = new Dictionary<TimeSpan, Face[]>();
+
+            // Process every frame
+            while (videoTime < videoProperties.Duration)
+            {
+                // Frame cut
                 var mediaClip = await MediaClip.CreateFromFileAsync(fileData);
                 var mediaComposition = new MediaComposition();
                 mediaComposition.Clips.Add(mediaClip);
                 var frame = await mediaComposition.GetThumbnailAsync(
-                    time,
+                    videoTime,
                     0,
                     0,
                     VideoFramePrecision.NearestFrame
                 );
+
+                // Stream conversion
                 var randomAccessStream = new InMemoryRandomAccessStream();
                 await RandomAccessStream.CopyAsync(frame, randomAccessStream);
 
-                DetectFace_Image(randomAccessStream.AsStreamForRead());
+                // Process and add image
+                var detectedFace = await DetectFace_Image(randomAccessStream.AsStreamForRead());
+                if (detectedFace != null)
+                {
+                    detectedFaces.Add(videoTime, detectedFace);
+                }
 
-                await Task.Delay(20_000);
+                // Quota overflow
+                if (videoFrame % frameQuota == 0) await Task.Delay(frameTimeout);
+
+                // Frame and time incrementation
+                videoTime += TimeSpan.FromSeconds(frameJumpSize);
+                videoFrame += 1;
             }
+
+            return detectedFaces;
         }
 
-        private async void DetectFace_Image(Stream fileData)
+        private async Task<Face[]> DetectFace_Image(Stream fileData)
         {
-            var faces = await FaceServiceClient.DetectAsync(fileData);
-            var faceIds = faces.Select(face => face.FaceId).ToArray();
-
-            if (faceIds.Length > 0)
+            // Detect faces in image
+            var imageFaces = await FaceServiceClient.DetectAsync(fileData);
+            if (imageFaces.Length <= 0)
             {
-                var results = await FaceServiceClient.IdentifyAsync("default2", faceIds);
-                foreach (var identifyResult in results)
-                {
-                    if (identifyResult.Candidates.Length == 0)
-                    {
-                        Frame.Navigate(typeof(SelectNotFound));
-                    }
-                    else
-                    {
-                        var candidateId = identifyResult.Candidates[0].PersonId;
-                        var person = await FaceServiceClient.GetPersonInPersonGroupAsync("default2", candidateId);
-                        //TODO success handler
-                    }
-                }
-            } else
-                Frame.Navigate(typeof(SelectNotFound));
+                return null;
+            }
 
+            // Process to recognition
+            var recognizedFaces = await FaceServiceClient.IdentifyAsync(
+                "default2",
+                imageFaces.Select(face => face.FaceId).ToArray()
+            );
+
+            // Repack faces
+            var confirmedFaces = (
+                from recognizedFace in recognizedFaces
+                from imageFace in imageFaces
+                where recognizedFace.FaceId == imageFace.FaceId
+                where recognizedFace.Candidates.Length >= 0
+                where recognizedFace.Candidates.Any(face => face.Confidence >= 0.9)
+                select imageFace
+            ).ToArray();
+
+            return confirmedFaces;
         }
     }
 }

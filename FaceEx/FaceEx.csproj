@@ -95,6 +95,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FaceList.cs" />
     <Compile Include="SelectNotFound.xaml.cs">
       <DependentUpon>SelectNotFound.xaml</DependentUpon>
     </Compile>
