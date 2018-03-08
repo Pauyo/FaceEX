@@ -10,6 +10,9 @@ using Windows.Storage.Streams;
 using Windows.UI.Xaml;
 using Microsoft.ProjectOxford.Face;
 using Microsoft.ProjectOxford.Face.Contract;
+using Windows.UI.Xaml.Media.Imaging;
+using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Input;
 
 namespace FaceEX
 {
@@ -54,20 +57,52 @@ namespace FaceEX
             {
                 var detectedFace = await DetectFace_Image(await fileData.OpenStreamForReadAsync());
 
+                // Condition Print image
                 if (detectedFace != null)
                 {
-
-                }
+                    Image.Content = null;
+                    Image.PointerEntered += new PointerEventHandler(Target_PointerEntered);
+                    Image.PointerExited += new PointerEventHandler(Target_PointerExited);
+                    var bitImage = new BitmapImage();
+                    IRandomAccessStream fileStream = await fileData.OpenReadAsync();
+                    await bitImage.SetSourceAsync(fileStream);
+                    ImageBrush ib = new ImageBrush();
+                    ib.ImageSource = bitImage;
+                    Image.Background = ib;
+                } else
+                    Frame.Navigate(typeof(SelectNotFound));
             }
             else if (fileData.ContentType.StartsWith("video"))
             {
                 var detectFaces = await DetectFace_Video(fileData);
 
+                // Condition Print (detactFaces = tableau asssociatif : cle = temps(MM::SS) => valeur : Face)
                 if (detectFaces.Count > 0)
                 {
-
+                    Image.Content = "La personne apparait à ces moments de videos : \n";
+                    foreach (var time in detectFaces.Keys)
+                    {
+                        Image.Content = Image.Content + "  - " + time + "\n";
+                    }
                 }
+                else
+                    Frame.Navigate(typeof(SelectNotFound));
             }
+        }
+
+        private void Target_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            Image.Content = null;
+        }
+
+        private void Target_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            Image.Content = "Upload another File";
+        }
+
+        private void Change_content_button()
+        {
+            Image.Content = "Upload Another File";
         }
 
         private async Task<Dictionary<TimeSpan, Face[]>> DetectFace_Video(StorageFile fileData)
@@ -148,6 +183,10 @@ namespace FaceEX
             ).ToArray();
 
             return confirmedFaces;
+        }
+
+        private class async
+        {
         }
     }
 }

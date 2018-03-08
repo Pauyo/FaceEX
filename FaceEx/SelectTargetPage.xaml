@@ -7,6 +7,6 @@
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Button Click="ButtonBase_OnClick_Image" Content="Select an video" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,305"/>
+        <Button Name="Image" Click="ButtonBase_OnClick_Image" Content="Select a video or image" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,111" FontSize="15"/>
     </Grid>
 </Page>
