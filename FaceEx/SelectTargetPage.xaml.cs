@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using System.Threading.Tasks;
 using Windows.Media.Editing;
 using Windows.Storage;
@@ -59,7 +60,7 @@ namespace FaceEX
             }
         }
 
-        private static async void DetectFace_Video(StorageFile fileData)
+        private async void DetectFace_Video(StorageFile fileData)
         {
             const int frameJumpSize = 15;
             var videoProperties = await fileData.Properties.GetVideoPropertiesAsync();
@@ -86,25 +87,29 @@ namespace FaceEX
             }
         }
 
-        private static async void DetectFace_Image(Stream fileData)
+        private async void DetectFace_Image(Stream fileData)
         {
             var faces = await FaceServiceClient.DetectAsync(fileData);
             var faceIds = faces.Select(face => face.FaceId).ToArray();
 
-            var results = await FaceServiceClient.IdentifyAsync("default", faceIds);
-            foreach (var identifyResult in results)
+            if (faceIds.Length > 0)
             {
-                if (identifyResult.Candidates.Length == 0)
+                var results = await FaceServiceClient.IdentifyAsync("default2", faceIds);
+                foreach (var identifyResult in results)
                 {
-                    //TODO no match handler
+                    if (identifyResult.Candidates.Length == 0)
+                    {
+                        Frame.Navigate(typeof(SelectNotFound));
+                    }
+                    else
+                    {
+                        var candidateId = identifyResult.Candidates[0].PersonId;
+                        var person = await FaceServiceClient.GetPersonInPersonGroupAsync("default2", candidateId);
+                        //TODO success handler
+                    }
                 }
-                else
-                {
-                    var candidateId = identifyResult.Candidates[0].PersonId;
-                    var person = await FaceServiceClient.GetPersonInLargePersonGroupAsync("default", candidateId);
-                    //TODO success handler
-                }
-            }
+            } else
+                Frame.Navigate(typeof(SelectNotFound));
 
         }
     }
