@@ -19,7 +19,7 @@ namespace FaceEX
     /// </summary>
     public sealed partial class SelectTargetPage
     {
-        private static readonly IFaceServiceClient FaceServiceClient = new FaceServiceClient(
+        private static readonly FaceServiceClient FaceServiceClient = new FaceServiceClient(
             "3d7d23e210144e1ab01e5f7a335d0a1d",
             "https://westcentralus.api.cognitive.microsoft.com/face/v1.0"
         );
@@ -102,6 +102,7 @@ namespace FaceEX
                 // Stream conversion
                 var randomAccessStream = new InMemoryRandomAccessStream();
                 await RandomAccessStream.CopyAsync(frame, randomAccessStream);
+                randomAccessStream.Seek(0);
 
                 // Process and add image
                 var detectedFace = await DetectFace_Image(randomAccessStream.AsStreamForRead());
@@ -111,7 +112,7 @@ namespace FaceEX
                 }
 
                 // Quota overflow
-                if (videoFrame % frameQuota == 0) await Task.Delay(frameTimeout);
+                if (videoFrame != 0 && videoFrame % frameQuota == 0) await Task.Delay(frameTimeout);
 
                 // Frame and time incrementation
                 videoTime += TimeSpan.FromSeconds(frameJumpSize);

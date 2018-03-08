@@ -8,6 +8,5 @@
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Button Click="ButtonBase_OnClick_Image" Content="Select an video" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,305"/>
-        <Image x:Name="Preview_Debug" HorizontalAlignment="Left" Height="298" Margin="126,692,0,0" VerticalAlignment="Top" Width="448"/>
     </Grid>
 </Page>

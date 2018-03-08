@@ -13,7 +13,7 @@ namespace FaceEX
     /// </summary>
     public sealed partial class SelectOriginPage
     {
-        private static readonly IFaceServiceClient FaceServiceClient = new FaceServiceClient(
+        private static readonly FaceServiceClient FaceServiceClient = new FaceServiceClient(
             "3d7d23e210144e1ab01e5f7a335d0a1d",
             "https://westcentralus.api.cognitive.microsoft.com/face/v1.0"
         );
