@@ -4,6 +4,11 @@ using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
 using Microsoft.ProjectOxford.Face;
+using Windows.Storage;
+using System.Collections.Generic;
+using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media.Imaging;
+using Windows.UI.Xaml.Media;
 
 namespace FaceEX
 {
@@ -13,6 +18,7 @@ namespace FaceEX
     /// </summary>
     public sealed partial class SelectOriginPage
     {
+        private IReadOnlyList<StorageFile> fileDatas;
         private static readonly FaceServiceClient FaceServiceClient = new FaceServiceClient(
             "3d7d23e210144e1ab01e5f7a335d0a1d",
             "https://westcentralus.api.cognitive.microsoft.com/face/v1.0"
@@ -38,39 +44,85 @@ namespace FaceEX
             fileOpenPicker.FileTypeFilter.Add(".png");
 
             // Open File picker dialog
-            var fileDatas = await fileOpenPicker.PickMultipleFilesAsync();
+            fileDatas = await fileOpenPicker.PickMultipleFilesAsync();
 
-            // Group
-            const string personGroupId = "default";
-            const string personGroupName = "Default";
-            if (await FaceServiceClient.GetPersonGroupAsync(personGroupId) == null)
-                await FaceServiceClient.CreatePersonGroupAsync(
+            Image.Content = null;
+            Image.PointerEntered += new PointerEventHandler(Target_PointerEntered);
+            Image.PointerExited += new PointerEventHandler(Target_PointerExited);
+            var images = new List<BitmapImage>();
+            if (fileDatas != null)
+            {
+                foreach (StorageFile file in fileDatas)
+                {
+                    string cExt = file.FileType;
+                    Windows.Storage.Streams.IRandomAccessStream fileStream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
+                    using (Windows.Storage.Streams.IRandomAccessStream filestream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read))
+                    {
+                       BitmapImage bitmapImage = new BitmapImage();
+                       await bitmapImage.SetSourceAsync(fileStream);
+                       images.Add(bitmapImage);
+                    }
+                }
+                ImageBrush ib = new ImageBrush();
+                ib.ImageSource = images[0];
+                Image.Background = ib;
+            }
+        }
+
+        private void Target_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            Image.Content = null;
+        }
+
+        private void Target_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            Image.Content = "Upload another File";
+        }
+
+        private async void Search_person(object sender, RoutedEventArgs e)
+        {
+            if (fileDatas != null && PersonName.Text != "")
+            {
+                const string personGroupId = "default";
+                const string personGroupName = "Default";
+                // Group
+                try
+                {
+                    await FaceServiceClient.CreatePersonGroupAsync(
+                        personGroupId,
+                        personGroupName
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Console.Write(ex);
+                }
+
+                // Person
+                string personId = PersonName.Text;
+                var person = await FaceServiceClient.CreatePersonInPersonGroupAsync(
                     personGroupId,
-                    personGroupName
+                    personId
                 );
 
-            // Person
-            const string personId = "Default";
-            var person = await FaceServiceClient.CreatePersonInPersonGroupAsync(
-                personGroupId,
-                personId
-            );
-
-            // Train person
-            foreach (var fileData in fileDatas)
-                await FaceServiceClient.AddPersonFaceInPersonGroupAsync(
-                    personGroupId,
-                    person.PersonId,
-                    await fileData.OpenStreamForReadAsync()
+                // Train person
+                foreach (var fileData in fileDatas)
+                    await FaceServiceClient.AddPersonFaceInPersonGroupAsync(
+                        personGroupId,
+                        person.PersonId,
+                        await fileData.OpenStreamForReadAsync()
                 );
 
-            await FaceServiceClient.TrainPersonGroupAsync(personGroupId);
+                await FaceServiceClient.TrainPersonGroupAsync(personGroupId);
 
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            while ((await FaceServiceClient.GetPersonGroupTrainingStatusAsync(personGroupId)).Status.Equals("running"))
-                await Task.Delay(1000);
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                while ((await FaceServiceClient.GetPersonGroupTrainingStatusAsync(personGroupId)).Status.Equals("running"))
+                    await Task.Delay(1000);
 
-            Frame.Navigate(typeof(SelectTargetPage));
+                Frame.Navigate(typeof(SelectTargetPage));
+            } else {
+                Validate.Content = "You must Upload a file and write the person's name";
+            }
         }
     }
 }

@@ -7,6 +7,9 @@
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Button Click="ButtonBase_OnClick_Image" Content="Select an image" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Button x:Name="Image" Click="ButtonBase_OnClick_Image" Content="Upload a file" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,67">
+        </Button>
+        <TextBox x:Name="PersonName"  VerticalAlignment="Bottom" Height="66" Text="" Width="1152" PlaceholderText="Write the person's name"/>
+        <Button x:Name="Validate" Content="Search" VerticalAlignment="Bottom" HorizontalAlignment="Right" Height="66" Width="342" Click="Search_person"/>
     </Grid>
 </Page>

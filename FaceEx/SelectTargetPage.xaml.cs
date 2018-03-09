@@ -184,9 +184,5 @@ namespace FaceEX
 
             return confirmedFaces;
         }
-
-        private class async
-        {
-        }
     }
 }
