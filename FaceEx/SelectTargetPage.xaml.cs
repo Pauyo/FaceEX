@@ -13,6 +13,7 @@ using Microsoft.ProjectOxford.Face.Contract;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Navigation;
 
 namespace FaceEX
 {
@@ -22,6 +23,13 @@ namespace FaceEX
     /// </summary>
     public sealed partial class SelectTargetPage
     {
+        private string person;
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            person = e.Parameter as string;
+        }
+
         private static readonly FaceServiceClient FaceServiceClient = new FaceServiceClient(
             "3d7d23e210144e1ab01e5f7a335d0a1d",
             "https://westcentralus.api.cognitive.microsoft.com/face/v1.0"

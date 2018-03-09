@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Media;
+using Windows.UI;
 
 namespace FaceEX
 {
@@ -19,6 +20,7 @@ namespace FaceEX
     public sealed partial class SelectOriginPage
     {
         private IReadOnlyList<StorageFile> fileDatas;
+        private Brush defaultBack;
         private static readonly FaceServiceClient FaceServiceClient = new FaceServiceClient(
             "3d7d23e210144e1ab01e5f7a335d0a1d",
             "https://westcentralus.api.cognitive.microsoft.com/face/v1.0"
@@ -27,6 +29,7 @@ namespace FaceEX
         public SelectOriginPage()
         {
             InitializeComponent();
+            defaultBack = Image.Background;
         }
 
         private async void ButtonBase_OnClick_Image(object sender, RoutedEventArgs e)
@@ -46,9 +49,6 @@ namespace FaceEX
             // Open File picker dialog
             fileDatas = await fileOpenPicker.PickMultipleFilesAsync();
 
-            Image.Content = null;
-            Image.PointerEntered += new PointerEventHandler(Target_PointerEntered);
-            Image.PointerExited += new PointerEventHandler(Target_PointerExited);
             var images = new List<BitmapImage>();
             if (fileDatas != null)
             {
@@ -63,10 +63,32 @@ namespace FaceEX
                        images.Add(bitmapImage);
                     }
                 }
-                ImageBrush ib = new ImageBrush();
-                ib.ImageSource = images[0];
-                Image.Background = ib;
+                if (images.Count > 0)
+                {
+                    Image.Content = null;
+                    Image.PointerEntered += new PointerEventHandler(Target_PointerEntered);
+                    Image.PointerExited += new PointerEventHandler(Target_PointerExited);
+                    ImageBrush ib = new ImageBrush();
+                    ib.ImageSource = images[0];
+                    Image.Background = ib;
+                }
+                else
+                {
+                    Image.PointerEntered += new PointerEventHandler(defaultTarget_PointerEntered);
+                    Image.PointerExited += new PointerEventHandler(defaultTarget_PointerExited);
+                    Image.Background = defaultBack;
+                }
             }
+        }
+
+        private void defaultTarget_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            Image.Content = "Upload a File";
+        }
+
+        private void defaultTarget_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            Image.Content = "Upload a File";
         }
 
         private void Target_PointerExited(object sender, PointerRoutedEventArgs e)
@@ -118,8 +140,9 @@ namespace FaceEX
                 // ReSharper disable once SuspiciousTypeConversion.Global
                 while ((await FaceServiceClient.GetPersonGroupTrainingStatusAsync(personGroupId)).Status.Equals("running"))
                     await Task.Delay(1000);
+                
 
-                Frame.Navigate(typeof(SelectTargetPage));
+                Frame.Navigate(typeof(SelectTargetPage), personId);
             } else {
                 Validate.Content = "You must Upload a file and write the person's name";
             }
